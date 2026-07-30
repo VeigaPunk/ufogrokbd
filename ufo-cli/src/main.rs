@@ -14,6 +14,8 @@ use tokio::process::Command;
 use tokio::time::sleep;
 use uuid::Uuid;
 
+mod auth;
+
 const APP_DIR: &str = ".ufo";
 const ROVERS_FILE: &str = "rovers.json";
 const MAILBOX_FILE: &str = "mailbox.jsonl";
@@ -52,6 +54,19 @@ enum Commands {
     },
     /// List mailbox contents
     Mailbox,
+    /// Auth (cloned from OpenCode auth connection)
+    Auth {
+        #[command(subcommand)]
+        action: AuthAction,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum AuthAction {
+    /// List providers from OpenCode ~/.local/share/opencode/auth.json or ~/.ufo/auth.json
+    List,
+    /// Show which store is active
+    Status,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -234,6 +249,29 @@ async fn main() -> Result<()> {
                 println!("{} | {} | {} | {}", op.id, op.status, op.title, op.pilot_cmd);
             }
         }
+        Commands::Auth { action } => match action {
+            AuthAction::List => {
+                let store = auth::load_auth()?;
+                let list = auth::list_providers(&store);
+                if list.is_empty() {
+                    println!("[ufo] no providers (checked OpenCode auth.json + ~/.ufo/auth.json)");
+                } else {
+                    for (id, kind) in list {
+                        println!("{}  ({})", id, kind);
+                    }
+                }
+            }
+            AuthAction::Status => {
+                let oc = dirs::home_dir().map(|h| h.join(".local/share/opencode/auth.json"));
+                let ufo = dirs::home_dir().map(|h| h.join(".ufo/auth.json"));
+                println!("OpenCode path: {:?}", oc);
+                println!("  exists: {}", oc.as_ref().map(|p| p.exists()).unwrap_or(false));
+                println!("UFO path: {:?}", ufo);
+                println!("  exists: {}", ufo.as_ref().map(|p| p.exists()).unwrap_or(false));
+                let store = auth::load_auth()?;
+                println!("loaded providers: {}", store.providers.len());
+            }
+        },
     }
     Ok(())
 }

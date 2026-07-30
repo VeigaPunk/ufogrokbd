@@ -14,6 +14,8 @@ use tokio::process::Command;
 use tokio::time::sleep;
 use uuid::Uuid;
 
+mod auth;
+
 const APP_DIR: &str = ".ufo";
 const ROVERS_FILE: &str = "rovers.json";
 
@@ -54,6 +56,17 @@ enum Commands {
         #[arg(long, default_value = ".")]
         project: PathBuf,
     },
+    /// Auth (cloned from OpenCode auth connection)
+    Auth {
+        #[command(subcommand)]
+        action: AuthAction,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum AuthAction {
+    List,
+    Status,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,6 +229,25 @@ async fn main() -> Result<()> {
             let raw = bd_json(&project, &["list", "--status=open"]).await?;
             println!("{raw}");
         }
+        Commands::Auth { action } => match action {
+            AuthAction::List => {
+                let store = auth::load_auth()?;
+                let list = auth::list_providers(&store);
+                if list.is_empty() {
+                    println!("[ufo-beads] no providers (OpenCode auth.json + ~/.ufo/auth.json)");
+                } else {
+                    for (id, kind) in list {
+                        println!("{}  ({})", id, kind);
+                    }
+                }
+            }
+            AuthAction::Status => {
+                let oc = dirs::home_dir().map(|h| h.join(".local/share/opencode/auth.json"));
+                println!("OpenCode path: {:?} exists={}", oc, oc.as_ref().map(|p| p.exists()).unwrap_or(false));
+                let store = auth::load_auth()?;
+                println!("loaded providers: {}", store.providers.len());
+            }
+        },
     }
     Ok(())
 }
