@@ -5,8 +5,10 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
+use std::ffi::OsStr;
+use std::fs::{self, OpenOptions};
+use std::path::{Path, PathBuf};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AuthStore {
@@ -17,7 +19,7 @@ pub struct AuthStore {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderAuth {
-    pub type_: Option<String>, // "api" | "oauth" | "wellknown"
+    pub type_: Option<String>,
     #[serde(rename = "type", default)]
     pub type_field: Option<String>,
     pub key: Option<String>,
@@ -30,6 +32,7 @@ pub struct ProviderAuth {
 }
 
 impl ProviderAuth {
+    #[allow(dead_code)]
     pub fn bearer(&self) -> Option<&str> {
         self.access_token
             .as_deref()
@@ -48,6 +51,50 @@ fn ufo_auth_path() -> Result<PathBuf> {
         .join(".ufo")
         .join("auth.json");
     Ok(p)
+}
+
+#[allow(dead_code)]
+fn set_private_mode(path: &Path, dir: bool) -> Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let mode = if dir { 0o700 } else { 0o600 };
+        let mut perms = fs::metadata(path)?.permissions();
+        perms.set_mode(mode);
+        fs::set_permissions(path, perms)?;
+    }
+    let _ = (path, dir);
+    Ok(())
+}
+
+#[allow(dead_code)]
+fn atomic_write_string(path: &Path, contents: &str) -> Result<()> {
+    let parent = path.parent().context("missing parent directory")?;
+    fs::create_dir_all(parent)?;
+    set_private_mode(parent, true)?;
+
+    let tmp_path = parent.join(format!(
+        ".{}.{}.tmp",
+        path.file_name().and_then(OsStr::to_str).unwrap_or("auth"),
+        Uuid::new_v4()
+    ));
+    {
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&tmp_path)?;
+        use std::io::Write;
+        file.write_all(contents.as_bytes())?;
+        file.flush()?;
+        file.sync_all()?;
+    }
+    set_private_mode(&tmp_path, false)?;
+    fs::rename(&tmp_path, path)?;
+    let dir = OpenOptions::new().read(true).open(parent)?;
+    dir.sync_all()?;
+    set_private_mode(path, false)?;
+    Ok(())
 }
 
 /// Load auth, preferring OpenCode store then falling back to ~/.ufo/auth.json
@@ -69,13 +116,10 @@ pub fn load_auth() -> Result<AuthStore> {
     Ok(AuthStore::default())
 }
 
+#[allow(dead_code)]
 pub fn save_ufo_auth(store: &AuthStore) -> Result<()> {
     let p = ufo_auth_path()?;
-    if let Some(parent) = p.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(p, serde_json::to_string_pretty(store)?)?;
-    Ok(())
+    atomic_write_string(&p, &serde_json::to_string_pretty(store)?)
 }
 
 pub fn list_providers(store: &AuthStore) -> Vec<(String, String)> {

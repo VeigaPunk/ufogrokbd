@@ -1,0 +1,8 @@
+/.SRCINFO
+/*.pkg.tar.zst
+/src/
+/pkg/
+/ufo-cli/target/
+/ufo-cli-beads/target/
+**/*.rlib
+**/*.rmeta

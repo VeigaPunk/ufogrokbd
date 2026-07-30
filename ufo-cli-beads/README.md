@@ -1,22 +1,24 @@
 # ufo-cli-beads
 
-Fork of ufo-cli that uses **beads** (`bd`) as the mailbox substrate.
+Beads-backed rover wrapper.
 
-Operations are beads issues. Rover claims via `bd ready` / `bd update --status=in_progress`, runs pilot, closes with `bd close`.
+Implementation is Rust-only. Pilot commands run through POSIX `sh`.
+This variant additionally requires `bd >= 1.1.2` on PATH and a project that already ran `bd init`.
 
-## Prerequisites
-- `bd` on PATH (https://github.com/steveyegge/beads or gastownhall/beads)
-- Project with `bd init`
+It uses `bd ready --claim --json` atomically, then runs the pilot, then closes on success.
 
 ## Install
+
 ```bash
-cargo install --path . --locked
+cargo install --path ufo-cli-beads --locked --force
 ```
 
-## Usage
+This replaces the same `ufo` binary installed by `ufo-cli`.
+
+## Use
+
 ```bash
 ufo enroll
-cd /your/project   # already bd init'ed
-ufo push --title "do the thing" --pilot-cmd "cargo test"
-ufo start --project .
+ufo push --title "do the thing" --pilot-cmd "cargo test" --project /your/project
+ufo start --project /your/project
 ```

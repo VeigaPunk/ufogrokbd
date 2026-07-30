@@ -1,35 +1,56 @@
 # ufogrokbd
 
-Pure-Rust UFO local rover CLIs.
+Pure-Rust UFO rover CLIs.
 
-- **ufo-cli/** — local JSONL mailbox substrate (`~/.ufo/mailbox.jsonl`)
-- **ufo-cli-beads/** — beads (`bd`) as mailbox substrate
+- `ufo-cli/` — local JSONL mailbox (`~/.ufo/mailbox.jsonl`)
+- `ufo-cli-beads/` — beads (`bd >= 1.1.2`) mailbox wrapper
 
-**Auth connection cloned from OpenCode**: both binaries load credentials from `~/.local/share/opencode/auth.json` (preferred) or `~/.ufo/auth.json`. Use `ufo auth list` / `ufo auth status`.
+Implementation is Rust-only. Pilot commands intentionally run through POSIX `sh`.
+The beads variant additionally requires `bd >= 1.1.2` on PATH.
 
-No GitHub Actions. Exact LTS dependency pins. Offline-first core loop.
+Auth loads from OpenCode first: `~/.local/share/opencode/auth.json`, then `~/.ufo/auth.json`.
 
-## Quick start (local mailbox)
+## Install
+
+### Cargo
 
 ```bash
-cd ufo-cli
-cargo install --path . --locked
+cargo install --path ufo-cli --locked
+```
+
+Beads install (replaces the same `ufo` binary):
+
+```bash
+cargo install --path ufo-cli-beads --locked --force
+```
+
+### Arch / makepkg
+
+From the repo root of this checkout:
+
+```bash
+makepkg -si
+```
+
+That builds only `ufo-cli` from the local source tree and installs the binary as `ufo`.
+The `ufo-cli-beads` crate is a separate local variant and also installs `ufo`.
+
+## Local mailbox
+
+```bash
 ufo enroll --name rover-1
 ufo auth status
 ufo push --title test --pilot-cmd "echo hello"
 ufo start
 ```
 
-## Quick start (beads)
+## Beads
+
+Warning: this variant requires `bd` already installed and a project that has run `bd init`.
 
 ```bash
-# requires `bd` on PATH + `bd init` in target project
-cd ufo-cli-beads
-cargo install --path . --locked
 ufo enroll
 ufo auth list
 ufo push --title "do X" --pilot-cmd "cargo test" --project /path/to/project
 ufo start --project /path/to/project
 ```
-
-Godspeed.

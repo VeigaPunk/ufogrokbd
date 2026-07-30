@@ -1,26 +1,33 @@
-# ufo-cli (VeigaPunk pure-Rust fork)
+# ufo-cli
 
-Local rover for UFO-style agent orchestration. **Pure Rust. Zero GitHub Actions. Local JSONL mailbox substrate.**
+Local rover for UFO-style orchestration.
 
-## Install (LTS deps)
+Pure Rust. Local JSONL mailbox substrate. Pilot commands run through POSIX `sh`.
+
+## Install
+
+### Cargo
 
 ```bash
-# Requires Rust stable (1.75+ recommended)
 cargo install --path . --locked
 ```
 
-Deps are pinned to LTS-compatible versions in Cargo.toml.
+### Arch
 
-## Quick start
+From the repo root:
+
+```bash
+makepkg -si
+```
+
+## Use
 
 ```bash
 ufo enroll --name my-rover --units 2
-ufo push --title "test" --pilot-cmd "echo hello && date"
+ufo push --title test --pilot-cmd "echo hello && date"
 ufo start --poll-secs 2
-# in another terminal
 ufo mailbox
 ```
 
-Mailbox lives at `~/.ufo/mailbox.jsonl`. Worktrees under `~/.ufo/work/<op-id>`.
-
-No Hub, no network required for the core loop.
+Mailbox: `~/.ufo/mailbox.jsonl`
+Workdirs: `~/.ufo/work/<op-id>`
