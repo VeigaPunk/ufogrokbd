@@ -3,6 +3,7 @@
 Local rover for UFO-style orchestration.
 
 Pure Rust. Local JSONL mailbox substrate. Pilot commands run through POSIX `sh`.
+OpenCode auth is read-only and shared with `ufo-cli-beads`.
 
 ## Install
 
@@ -28,6 +29,8 @@ ufo push --title test --pilot-cmd "echo hello && date"
 ufo start --poll-secs 2
 ufo mailbox
 ```
+
+`ufo auth list` shows sanitized provider IDs and redacted metadata only.
 
 Mailbox: `~/.ufo/mailbox.jsonl`
 Workdirs: `~/.ufo/work/<op-id>`

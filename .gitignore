@@ -4,5 +4,6 @@
 /pkg/
 /ufo-cli/target/
 /ufo-cli-beads/target/
+/ufo-auth/target/
 **/*.rlib
 **/*.rmeta

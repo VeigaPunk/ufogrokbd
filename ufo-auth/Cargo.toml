@@ -1,0 +1,13 @@
+[package]
+name = "ufo-auth"
+version = "0.1.0"
+edition = "2021"
+description = "Shared OpenCode auth reader for UFO CLIs"
+license = "BSD-3-Clause"
+repository = "https://github.com/VeigaPunk/ufogrokbd"
+
+[dependencies]
+anyhow = "=1.0.80"
+dirs = "=5.0.1"
+serde = { version = "=1.0.197", features = ["derive"] }
+serde_json = "=1.0.114"

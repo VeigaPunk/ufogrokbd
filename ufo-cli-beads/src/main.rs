@@ -12,9 +12,8 @@ use std::process::Stdio;
 use std::time::Duration;
 use tokio::process::Command;
 use tokio::time::sleep;
+use ufo_auth as auth;
 use uuid::Uuid;
-
-mod auth;
 
 const APP_DIR: &str = ".ufo";
 const ROVERS_FILE: &str = "rovers.json";
@@ -465,25 +464,55 @@ async fn main() -> Result<()> {
         }
         Commands::Auth { action } => match action {
             AuthAction::List => {
-                let store = auth::load_auth()?;
-                let list = auth::list_providers(&store);
+                let snapshot = auth::load_auth()?;
+                let list = snapshot.store.summaries(snapshot.source.clone());
                 if list.is_empty() {
-                    println!("[ufo-beads] no providers (OpenCode auth.json + ~/.ufo/auth.json)");
+                    println!(
+                        "[ufo-beads] no providers (OpenCode auth: env, XDG_DATA_HOME/opencode/auth.json, then ~/.local/share/opencode/auth.json)"
+                    );
                 } else {
-                    for (id, kind) in list {
-                        println!("{}  ({})", id, kind);
+                    for item in list {
+                        let oauth = item
+                            .oauth
+                            .as_ref()
+                            .map(|oauth| {
+                                format!(
+                                    " expires={} account={} enterprise={}",
+                                    oauth.expiry_state,
+                                    oauth.account_id.as_deref().unwrap_or("-"),
+                                    oauth.enterprise_url.as_deref().unwrap_or("-")
+                                )
+                            })
+                            .unwrap_or_default();
+                        println!(
+                            "{}  ({} source={} policy={} metadata={}){}",
+                            item.provider_id,
+                            item.kind,
+                            item.source,
+                            item.policy,
+                            if item.metadata_present {
+                                "present"
+                            } else {
+                                "-"
+                            },
+                            oauth
+                        );
+                    }
+                    if snapshot.malformed_entries > 0 {
+                        println!(
+                            "[ufo-beads] skipped malformed entries: {}",
+                            snapshot.malformed_entries
+                        );
                     }
                 }
             }
             AuthAction::Status => {
-                let oc = dirs::home_dir().map(|h| h.join(".local/share/opencode/auth.json"));
-                println!(
-                    "OpenCode path: {:?} exists={}",
-                    oc,
-                    oc.as_ref().map(|p| p.exists()).unwrap_or(false)
-                );
-                let store = auth::load_auth()?;
-                println!("loaded providers: {}", store.providers.len());
+                let snapshot = auth::load_auth()?;
+                println!("OpenCode source: {}", snapshot.source);
+                println!("OpenCode file: {:?}", snapshot.resolved_path);
+                println!("loaded providers: {}", snapshot.store.len());
+                println!("usable providers: {}", snapshot.store.usable_count());
+                println!("skipped malformed entries: {}", snapshot.malformed_entries);
             }
         },
     }

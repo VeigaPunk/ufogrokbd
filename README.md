@@ -8,7 +8,8 @@ Pure-Rust UFO rover CLIs.
 Implementation is Rust-only. Pilot commands intentionally run through POSIX `sh`.
 The beads variant additionally requires `bd >= 1.1.2` on PATH.
 
-Auth loads from OpenCode first: `~/.local/share/opencode/auth.json`, then `~/.ufo/auth.json`.
+Auth is read-only from OpenCode: `OPENCODE_AUTH_CONTENT`, then `XDG_DATA_HOME/opencode/auth.json`, then `~/.local/share/opencode/auth.json`.
+Only OAuth entries are selectable; API and wellknown entries are listed as unsupported.
 
 ## Install
 

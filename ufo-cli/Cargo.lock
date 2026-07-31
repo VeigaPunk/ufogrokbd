@@ -614,6 +614,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ufo-auth"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ufo-cli"
 version = "0.1.0"
 dependencies = [
@@ -625,6 +635,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "ufo-auth",
  "uuid",
 ]
 
